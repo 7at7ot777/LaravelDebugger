@@ -1,0 +1,28 @@
+models:
+  Debug:
+    line_number: integer
+    class_name: string
+    variable_type: string nullable
+    variable_id: bigInteger nullable
+    timestamps: timestamps
+    relationships:
+      morphTo: variable
+
+  Json:
+    json: json
+    timestamps: timestamps
+    relationships:
+      morphOne: Debug variable
+
+  Text:
+    text: longtext
+    timestamps: timestamps
+    relationships:
+      morphOne: Debug variable
+
+  Number:
+    float: decimal:15,8
+    is_int: boolean default:false
+    timestamps: timestamps
+    relationships:
+      morphOne: Debug variable
