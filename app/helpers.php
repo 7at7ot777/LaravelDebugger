@@ -6,7 +6,7 @@ if (!function_exists('debug_log')) {
      */
     function debug_log($variable, $label = null)
     {
-        $controller = new \App\Http\Controllers\DebuggerController();
+        $controller = new \App\Http\Controllers\DatabaseDebugger();
 
         // If a label is provided, create an array with the label
         if ($label) {

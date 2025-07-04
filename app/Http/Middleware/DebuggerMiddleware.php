@@ -19,7 +19,7 @@ class DebuggerMiddleware
     public function __construct()
     {
         // Exclude the debug viewer route from being logged
-        $this->excludeRoutes = [route('debug.viewer')];
+        $this->excludeRoutes = [route(config('debugger.route_name'))];
     }
 
     /**
@@ -32,7 +32,7 @@ class DebuggerMiddleware
         if (in_array($request->url(), $this->excludeRoutes)) {
             return $next($request);
         }
-        if(config('debugger.refresh_database'))
+        if(config('debugger.truncate_tables'))
         {
             Text::truncate();
             Json::truncate();

@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Debugger;
 use App\Models\Debug;
 use App\Models\Text;
 use App\Models\Number;
@@ -28,98 +29,12 @@ class DebugViewer extends Component
 
     public function loadDebugData()
     {
-        $query = Debug::with('debugable')
-            ->orderBy('id', config('debugger.sort'));
-
-        if ($this->search) {
-            $search = '%' . $this->search . '%';
-
-            $query->where(function ($q) use ($search) {
-                $q->where('class_name', 'like', $search)
-                    ->orWhere('line_number', 'like', $search)
-                    ->orWhereHasMorph('debugable', [Text::class, Json::class, Number::class], function ($subQuery, $type) use ($search) {
-                        switch ($type) {
-                            case Text::class:
-                                $subQuery->where('text', 'like', $search);
-                                break;
-                            case Json::class:
-                                $subQuery->where('json', 'like', $search);
-                                break;
-                            case Number::class:
-                                $subQuery->whereRaw('CAST(number AS CHAR) LIKE ?', [$search]);
-                                break;
-                        }
-                    });
-            });
-        }
-
-        if ($this->filterByType) {
-            $query->where('debug_type', $this->filterByType);
-        }
-
-        if ($this->filterByFile) {
-            $query->where('class_name', 'like', '%' . $this->filterByFile . '%');
-        }
-
-        $this->debugs = $query->get()->map(function ($debug) {
-            return [
-                'id' => $debug->id,
-                'class_name' => $debug->class_name,
-                'line_number' => $debug->line_number,
-                'debug_type' => $debug->debug_type,
-                'created_at' => $debug->created_at,
-                'value' => $this->formatDebugValue($debug),
-                'raw_value' => $this->getRawValue($debug),
-            ];
-        })->toArray();
+        $this->debugs = Debugger::loadDebugData($this->search, $this->filterByType, $this->filterByFile);;
     }
 
     public function loadFiles()
     {
-        $this->files = Debug::select('class_name')
-            ->distinct()
-            ->pluck('class_name')
-            ->filter()
-            ->values()
-            ->toArray();
-    }
-
-    private function formatDebugValue($debug)
-    {
-        if (!$debug->debugable) {
-            return 'N/A';
-        }
-
-        switch ($debug->debug_type) {
-            case 'text':
-                return $debug->debugable->text;
-            case 'number':
-                return $debug->debugable->is_int ?
-                    (int) $debug->debugable->number :
-                    (float) $debug->debugable->number;
-            case 'json':
-                return json_decode($debug->debugable->json, true);
-            default:
-                return 'Unknown type';
-        }
-    }
-
-    private function getRawValue($debug)
-    {
-        if (!$debug->debugable) {
-            return '';
-        }
-
-        switch ($debug->debug_type) {
-            case 'text':
-                return $debug->debugable->text;
-            case 'number':
-                return (string) $debug->debugable->number;
-            case 'json':
-                return $debug->debugable->json;
-            default:
-                return '';
-        }
+        $this->files = Debugger::loadFiles();
     }
 
     public function updated($property)
@@ -139,10 +54,7 @@ class DebugViewer extends Component
 
     public function clearAllDebugData()
     {
-        Text::truncate();
-        Json::truncate();
-        Number::truncate();
-        Debug::truncate();
+        Debugger::clearAllDebugData();
 
         $this->loadDebugData();
         $this->loadFiles();

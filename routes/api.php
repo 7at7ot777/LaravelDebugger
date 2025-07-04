@@ -10,7 +10,7 @@ Route::get('/user', function (Request $request) {
 
 
 Route::get('/test', function () {
-    $debugController = new \App\Http\Controllers\DebuggerController();
+    $debugController = new \App\Http\Controllers\DatabaseDebugger();
     $array = [
         'name' => 'John Doe',
         'age' => 30,

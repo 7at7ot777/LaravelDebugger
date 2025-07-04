@@ -103,6 +103,7 @@
                             </tr>
                             </thead>
                             <tbody>
+{{--                            @dd($debugs)--}}
                             @foreach($debugs as $debug)
                                 @php
                                     $preview = is_string($debug['value'])
