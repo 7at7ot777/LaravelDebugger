@@ -161,6 +161,8 @@ class FileDebugger implements DebuggerInterface
     }
     public function clearAllDebugData(): void
     {
+        if(!config('debugger.truncate_tables'))
+            return;
         File::put($this->logFile, '');
     }
 }

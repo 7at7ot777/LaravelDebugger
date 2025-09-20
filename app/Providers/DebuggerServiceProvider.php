@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Debugger;
 use App\DebuggerInterface;
 use App\Http\Controllers\CacheDebugger;
 use App\Http\Controllers\DatabaseDebugger;
@@ -35,6 +36,12 @@ class DebuggerServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-
+        if (
+            !request()->is(config('debugger.route_name')) &&
+            !request()->is('livewire/update') &&
+            config('debugger.truncate_tables')
+        ) {
+            Debugger::clearAllDebugData();
+        }
     }
 }

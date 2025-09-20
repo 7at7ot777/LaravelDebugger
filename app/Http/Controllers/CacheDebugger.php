@@ -20,7 +20,22 @@ class CacheDebugger implements DebuggerInterface
     private const CACHE_TTL = 3600; // 1 hour
     public function __construct()
     {
-        Cache::put(self::CACHE_COUNTER_KEY, 0, self::CACHE_TTL);
+
+        // Initialize cache with counter value if it doesn't exist
+//        Cache::put(
+//            config('debugger.cache.counter_key'),
+//            Cache::get(config('debugger.cache.counter_key')) ?? 1,
+//            config('debugger.cache.ttl')
+//        );
+
+        // For debugging purposes
+        // dd([
+        //     'counter' => Cache::get(config('debugger.cache.counter_key')),
+        //     'index'   => Cache::get(config('debugger.cache.index_key')),
+        //     'files'   => Cache::get(config('debugger.cache.files_key')),
+        // ]);
+
+
     }
 
     public function display($variable): void
@@ -73,11 +88,11 @@ class CacheDebugger implements DebuggerInterface
 
     public function loadDebugData($search = null, $filterByType = null, $filterByFile = null): array
     {
-        $index = Cache::get(self::CACHE_INDEX_KEY, []);
+        $index = Cache::get(config('debugger.cache.index_key'), []);
         $results = [];
 
         foreach ($index as $id) {
-            $entry = Cache::get(self::CACHE_KEY_PREFIX . $id);
+            $entry = Cache::get(config('debugger.cache.key_prefix') . $id);
             if (!$entry) continue;
 
             // Apply filters
@@ -102,34 +117,45 @@ class CacheDebugger implements DebuggerInterface
         usort($results, function ($a, $b) use ($sortOrder) {
             return $sortOrder === 'desc' ? $b['id'] - $a['id'] : $a['id'] - $b['id'];
         });
-
         return $results;
     }
 
     public function loadFiles(): array
     {
-        return Cache::get(self::CACHE_FILES_KEY, []);
+        return Cache::get(config('debugger.cache.files_key'), []);
     }
 
     public function clearAllDebugData(): void
     {
-        $index = Cache::get(self::CACHE_INDEX_KEY, []);
+        if(!config('debugger.truncate_tables'))
+            return;
+
+        $index = Cache::get(config('debugger.cache.index_key'), []);
 
         // Remove all debug entries
         foreach ($index as $id) {
-            Cache::forget(self::CACHE_KEY_PREFIX . $id);
+            Cache::forget(config('debugger.cache.key_prefix') . $id);
         }
 
         // Clear index and metadata
-        Cache::forget(self::CACHE_INDEX_KEY);
-        Cache::forget(self::CACHE_COUNTER_KEY);
-        Cache::forget(self::CACHE_FILES_KEY);
+        Cache::forget(config('debugger.cache.index_key'));
+        Cache::forget(config('debugger.cache.counter_key'));
+        Cache::forget(config('debugger.cache.files_key'));
     }
 
     private function getNextId(): int
     {
-        return Cache::increment(self::CACHE_COUNTER_KEY, 1);
+        $key = config('debugger.cache.counter_key');
+
+        $current = (int) Cache::get($key, 0);
+
+        $next = $current + 1;
+
+        Cache::put($key, $next, config('debugger.cache.ttl'));
+
+        return $next;
     }
+
 
     private function getVariableType($variable): string
     {
@@ -189,33 +215,33 @@ class CacheDebugger implements DebuggerInterface
     private function storeDebugEntry(array $entry): void
     {
         Cache::put(
-            self::CACHE_KEY_PREFIX . $entry['id'],
+            config('debugger.cache.key_prefix') . $entry['id'],
             $entry,
-            self::CACHE_TTL
+            config('debugger.cache.ttl')
         );
     }
 
     private function updateIndex(array $entry): void
     {
-        $index = Cache::get(self::CACHE_INDEX_KEY, []);
+        $index = Cache::get(config('debugger.cache.index_key'), []);
         $index[] = $entry['id'];
 
         // Keep only the last 1000 entries to prevent memory issues
         if (count($index) > 1000) {
             $oldId = array_shift($index);
-            Cache::forget(self::CACHE_KEY_PREFIX . $oldId);
+            Cache::forget(config('debugger.cache.key_prefix') . $oldId);
         }
 
-        Cache::put(self::CACHE_INDEX_KEY, $index, self::CACHE_TTL);
+        Cache::put(config('debugger.cache.index_key'), $index, config('debugger.cache.ttl'));
     }
 
     private function updateFilesList(string $className): void
     {
-        $files = Cache::get(self::CACHE_FILES_KEY, []);
+        $files = Cache::get(config('debugger.cache.files_key'), []);
 
         if (!in_array($className, $files)) {
             $files[] = $className;
-            Cache::put(self::CACHE_FILES_KEY, array_values($files), self::CACHE_TTL);
+            Cache::put(config('debugger.cache.files_key'), array_values($files), config('debugger.cache.ttl'));
         }
     }
 

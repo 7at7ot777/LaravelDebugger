@@ -201,13 +201,13 @@ class DatabaseDebugger implements DebuggerInterface
     }
     private function refreshDB()
     {
-        if(config('debugger.truncate_tables'))
-        {
+        if(!config('debugger.truncate_tables'))
+            return;
+
             Text::truncate();
             Json::truncate();
             Number::truncate();
             Debug::truncate();
-        }
     }
 
     public function clearAllDebugData(): void

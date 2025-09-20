@@ -29,6 +29,7 @@ class DebuggerMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
+        return $next($request);
         if (in_array($request->url(), $this->excludeRoutes)) {
             return $next($request);
         }
